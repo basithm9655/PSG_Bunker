@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">
+                Smart <span class="highlight">Bunker Planning</span> Made Easy
+            </h1>
+            <p class="hero-description">
+                Plan your class attendance strategically. View your timetable, track attendance, 
+                and get smart suggestions on which classes you can bunk without affecting your percentage.
+            </p>
+            <div class="hero-features">
+                <div class="feature">
+                    <i class="fas fa-table"></i>
+                    <span>Interactive Timetable</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Attendance Tracking</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Smart Suggestions</span>
+                </div>
+            </div>
+            <a href="{{ url_for('timetable') }}" class="cta-button">
+                <i class="fas fa-rocket"></i>
+                Launch Planner
+            </a>
+        </div>
+        <div class="hero-visual">
+            <div class="visual-card">
+                <div class="card-header">
+                    <div class="card-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="timetable-preview">
+                        <div class="preview-row">
+                            <span class="preview-time">9:00 AM</span>
+                            <span class="preview-subject math">Mathematics</span>
+                        </div>
+                        <div class="preview-row">
+                            <span class="preview-time">10:00 AM</span>
+                            <span class="preview-subject physics">Physics</span>
+                        </div>
+                        <div class="preview-row">
+                            <span class="preview-time">11:00 AM</span>
+                            <span class="preview-subject free">Free Period</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="info-section">
+    <div class="container">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>View Timetable</h3>
+                <p>Access your complete class schedule with all subjects and timings</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Track Attendance</h3>
+                <p>Mark attended or bunked classes to track your current percentage</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Get Suggestions</h3>
+                <p>Receive smart recommendations on safe classes to bunk</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
