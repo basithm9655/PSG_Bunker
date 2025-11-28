@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Student Dashboard</h2>
+    </div>
+</div>
+
+<!-- Attendance Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Attendance</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Total Hours</th>
+                                <th>Present</th>
+                                <th>Percentage</th>
+                                <th>What-If Calculator</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for course in attendance %}
+                            <tr>
+                                <td>{{ course.course_code }}</td>
+                                <td>{{ course.total_hours }}</td>
+                                <td>{{ course.total_present }}</td>
+                                <td>
+                                    <span class="badge {% if course.percentage >= 75 %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ course.percentage }}%
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#whatIfModal"
+                                            onclick="setupWhatIf('{{ course.course_code }}', {{ course.total_hours }}, {{ course.total_present }})">
+                                        Calculate
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timetable Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Weekly Timetable</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                {% for day in basic_timetable.days %}
+                                <th>{{ day }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for period in basic_timetable.periods %}
+                            <tr>
+                                <td><strong>{{ period.time }}</strong></td>
+                                {% for subject in period.subjects %}
+                                <td>{{ subject }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Course List -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Registered Courses</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for course in timetable %}
+                    <div class="col-md-4 mb-2">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>{{ course.course_code }}</h6>
+                                <p class="mb-1">{{ course.course_name }}</p>
+                                <small class="text-muted">Sem: {{ course.semester }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- What-If Modal -->
+<div class="modal fade" id="whatIfModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">What-If Calculator - <span id="modalCourseCode"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Future Classes</label>
+                    <input type="number" class="form-control" id="futureClasses" min="0" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Classes You'll Attend</label>
+                    <input type="number" class="form-control" id="futureAttended" min="0" value="0">
+                </div>
+                <div id="whatIfResult" class="alert alert-info" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="calculateWhatIf()">Calculate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentCourse = '';
+let currentHours = 0;
+let currentPresent = 0;
+
+function setupWhatIf(courseCode, hours, present) {
+    currentCourse = courseCode;
+    currentHours = hours;
+    currentPresent = present;
+    
+    document.getElementById('modalCourseCode').textContent = courseCode;
+    document.getElementById('futureClasses').value = 0;
+    document.getElementById('futureAttended').value = 0;
+    document.getElementById('whatIfResult').style.display = 'none';
+}
+
+function calculateWhatIf() {
+    const futureClasses = parseInt(document.getElementById('futureClasses').value) || 0;
+    const futureAttended = parseInt(document.getElementById('futureAttended').value) || 0;
+    
+    if (futureAttended > futureClasses) {
+        alert('Attended classes cannot be more than total classes!');
+        return;
+    }
+    
+    fetch('/what_if', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            current_hours: currentHours,
+            current_present: currentPresent,
+            future_classes: futureClasses,
+            future_attended: futureAttended
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultDiv = document.getElementById('whatIfResult');
+        let html = '';
+        
+        if (data.status === 'need_attend') {
+            html = `<strong>New Percentage: ${data.new_percentage}%</strong><br>
+                   You need to attend <span class="text-danger">${data.classes_to_attend}</span> more classes to reach 75%`;
+        } else {
+            html = `<strong>New Percentage: ${data.new_percentage}%</strong><br>
+                   You can bunk <span class="text-success">${data.classes_to_bunk}</span> classes and still maintain 75%`;
+        }
+        
+        resultDiv.innerHTML = html;
+        resultDiv.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error calculating what-if scenario');
+    });
+}
+</script>
+{% endblock %}
