@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <h1><i class="fas fa-cog"></i> Settings</h1>
+        <p>Customize your Bunker experience</p>
+    </div>
+
+    <div class="settings-grid">
+        <!-- Attendance Threshold -->
+        <div class="settings-card glass-card">
+            <div class="settings-card-header">
+                <i class="fas fa-percentage"></i>
+                <h3>Attendance Threshold</h3>
+            </div>
+            <div class="settings-card-body">
+                <p>Set your minimum required attendance percentage</p>
+                <div class="threshold-control">
+                    <input type="range" id="thresholdSlider" min="50" max="90" value="{{ threshold }}" 
+                           class="slider" oninput="updateThresholdValue(this.value)">
+                    <div class="threshold-value">
+                        <span id="thresholdValue">{{ threshold }}</span>%
+                    </div>
+                </div>
+                <div class="threshold-info">
+                    <div class="threshold-level safe">
+                        <span>Safe: ≥ {{ threshold + 5 }}%</span>
+                    </div>
+                    <div class="threshold-level warning">
+                        <span>Warning: {{ threshold }}% - {{ threshold + 4 }}%</span>
+                    </div>
+                    <div class="threshold-level danger">
+                        <span>Danger: &lt; {{ threshold }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="settings-card glass-card">
+            <div class="settings-card-header">
+                <i class="fas fa-database"></i>
+                <h3>Data Management</h3>
+            </div>
+            <div class="settings-card-body">
+                <p>Manage your attendance data and cache</p>
+                <div class="data-actions">
+                    <button class="btn-secondary" onclick="clearAllData()">
+                        <i class="fas fa-trash"></i> Clear Manual Data
+                    </button>
+                    <button class="btn-secondary" onclick="refreshAllData()">
+                        <i class="fas fa-redo"></i> Refresh All Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div class="settings-card glass-card">
+            <div class="settings-card-header">
+                <i class="fas fa-info-circle"></i>
+                <h3>About Bunker</h3>
+            </div>
+            <div class="settings-card-body">
+                <div class="about-content">
+                    <div class="app-info">
+                        <strong>Version:</strong> 2.0.0<br>
+                        <strong>Last Updated:</strong> {{ now().strftime('%Y-%m-%d') }}
+                    </div>
+                    <div class="developer-info">
+                        <strong>Developed by:</strong> Basi<br>
+                        <div class="social-links">
+                            <a href="https://www.instagram.com/bazi.t_h?igsh=MWhpanF0bDlrcHhhYQ==" 
+                               target="_blank" class="social-link">
+                                <i class="fab fa-instagram"></i> Instagram
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="settings-card glass-card">
+            <div class="settings-card-header">
+                <i class="fas fa-star"></i>
+                <h3>Features</h3>
+            </div>
+            <div class="settings-card-body">
+                <div class="features-list">
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle safe"></i>
+                        <span>Live Attendance Tracking</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle safe"></i>
+                        <span>Timetable Integration</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle safe"></i>
+                        <span>Bunk Planning Calculator</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle safe"></i>
+                        <span>Manual Attendance Entry</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle safe"></i>
+                        <span>Threshold Alerts</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-content glass-card">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle"></i> Confirm Action</h3>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+            <button class="btn-danger" id="confirmAction">Confirm</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateThresholdValue(value) {
+    document.getElementById('thresholdValue').textContent = value;
+    
+    // Update threshold levels display
+    const safeLevel = document.querySelector('.threshold-level.safe span');
+    const warningLevel = document.querySelector('.threshold-level.warning span');
+    const dangerLevel = document.querySelector('.threshold-level.danger span');
+    
+    safeLevel.textContent = `Safe: ≥ ${parseInt(value) + 5}%`;
+    warningLevel.textContent = `Warning: ${value}% - ${parseInt(value) + 4}%`;
+    dangerLevel.textContent = `Danger: < ${value}%`;
+}
+
+// Debounce function to prevent too many API calls
+let thresholdTimeout;
+document.getElementById('thresholdSlider').addEventListener('input', function(e) {
+    clearTimeout(thresholdTimeout);
+    thresholdTimeout = setTimeout(() => {
+        updateThreshold(e.target.value);
+    }, 500);
+});
+
+async function updateThreshold(value) {
+    try {
+        const response = await fetch('/update_threshold', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ threshold: parseInt(value) })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showNotification('Threshold updated successfully', 'success');
+        } else {
+            showNotification('Failed to update threshold', 'error');
+        }
+    } catch (error) {
+        showNotification('Error updating threshold', 'error');
+    }
+}
+
+function clearAllData() {
+    showConfirmModal('This will clear all your manual attendance data. Continue?', async () => {
+        try {
+            const response = await fetch('/clear_manual_attendance', {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showNotification('Manual data cleared successfully', 'success');
+            } else {
+                showNotification('Failed to clear data', 'error');
+            }
+        } catch (error) {
+            showNotification('Error clearing data', 'error');
+        }
+    });
+}
+
+function refreshAllData() {
+    showConfirmModal('This will refresh all data from eCampus. Continue?', () => {
+        window.location.reload();
+    });
+}
+
+function showConfirmModal(message, confirmCallback) {
+    document.getElementById('confirmMessage').textContent = message;
+    const confirmBtn = document.getElementById('confirmAction');
+    
+    // Remove existing event listeners
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    
+    newConfirmBtn.onclick = function() {
+        confirmCallback();
+        closeModal('confirmModal');
+    };
+    
+    showModal('confirmModal');
+}
+
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+function showNotification(message, type = 'info') {
+    // Implementation from main.js
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 
+                          type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 5000);
+}
+</script>
+{% endblock %}
