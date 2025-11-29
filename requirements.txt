@@ -1,9 +1,11 @@
-beautifulsoup4==4.11.1
+# include build helpers first
+setuptools
+wheel
+pip
+
 Flask==2.3.2
+beautifulsoup4==4.11.1
+requests==2.31.0
 gunicorn==23.0.0
 numpy==1.22.3
 pandas==1.4.2
-requests==2.31.0
-Werkzeug==3.0.6
-pydantic==1.10.8
-pylint==2.17.4
